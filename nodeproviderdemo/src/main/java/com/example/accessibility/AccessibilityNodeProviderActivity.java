@@ -26,6 +26,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
@@ -53,6 +54,8 @@ import java.util.List;
  * </p>
  */
 public class AccessibilityNodeProviderActivity extends Activity {
+    private static final String TAG = AccessibilityNodeProviderActivity.class.getSimpleName();
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -270,12 +273,14 @@ public class AccessibilityNodeProviderActivity extends Activity {
             final int action = event.getAction();
             switch (action) {
                 case MotionEvent.ACTION_HOVER_ENTER: {
+                    Log.d(TAG, "onHoverVirtualView: virtualView="+virtualView.mId+" action="+action);
                     sendAccessibilityEventForVirtualView(virtualView,
-                            AccessibilityEvent.TYPE_VIEW_HOVER_ENTER);
+                            AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
                 } break;
                 case MotionEvent.ACTION_HOVER_EXIT: {
+                    Log.d(TAG, "onHoverVirtualView: virtualView="+virtualView.mId+" action="+action);
                     sendAccessibilityEventForVirtualView(virtualView,
-                            AccessibilityEvent.TYPE_VIEW_HOVER_EXIT);
+                            AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED);
                 } break;
             }
             return true;
@@ -291,6 +296,7 @@ public class AccessibilityNodeProviderActivity extends Activity {
             // If touch exploration, i.e. the user gets feedback while touching
             // the screen, is enabled we fire accessibility events.
             if (mAccessibilityManager.isTouchExplorationEnabled()) {
+                Log.d(TAG, "sendAccessibilityEventForVirtualView: virtualView="+virtualView.mId+" eventType="+eventType);
                 AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
                 event.setPackageName(getContext().getPackageName());
                 event.setClassName(virtualView.getClass().getName());
@@ -354,6 +360,8 @@ public class AccessibilityNodeProviderActivity extends Activity {
              */
             @Override
             public AccessibilityNodeInfo createAccessibilityNodeInfo(int virtualViewId) {
+                Log.d(TAG, "createAccessibilityNodeInfo virtualViewId=" + virtualViewId);
+
                 AccessibilityNodeInfo info = null;
                 if (virtualViewId == View.NO_ID) {
                     // We are requested to create an AccessibilityNodeInfo describing
@@ -378,8 +386,8 @@ public class AccessibilityNodeProviderActivity extends Activity {
                     // Obtain and initialize an AccessibilityNodeInfo with
                     // information about the virtual view.
                     info = AccessibilityNodeInfo.obtain();
-                    info.addAction(AccessibilityNodeInfo.ACTION_SELECT);
-                    info.addAction(AccessibilityNodeInfo.ACTION_CLEAR_SELECTION);
+                    info.addAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
+                    info.addAction(AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS);
                     info.setPackageName(getContext().getPackageName());
                     info.setClassName(virtualView.getClass().getName());
                     info.setSource(VirtualSubtreeRootView.this, virtualViewId);
@@ -396,6 +404,8 @@ public class AccessibilityNodeProviderActivity extends Activity {
             @Override
             public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String searched,
                     int virtualViewId) {
+                Log.d(TAG, "findAccessibilityNodeInfosByText: text="+searched+"virtualViewId="+virtualViewId);
+
                 if (TextUtils.isEmpty(searched)) {
                     return Collections.emptyList();
                 }
@@ -441,16 +451,21 @@ public class AccessibilityNodeProviderActivity extends Activity {
              */
             @Override
             public boolean performAction(int virtualViewId, int action, Bundle arguments) {
+                // TODO This only receives ACTION_CLEAR_ACCESSIBILITY_FOCUS actions, not ACTION_ACCESSIBILITY_FOCUS.
+                // I can't figure out why
+                
+                Log.d(TAG, "performAction: virtualViewId=" + virtualViewId + ", action=" + action);
+
                 if (virtualViewId == View.NO_ID) {
                     // Perform the action on the host View.
                     switch (action) {
-                        case AccessibilityNodeInfo.ACTION_SELECT:
+                        case AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS:
                             if (!isSelected()) {
                                 setSelected(true);
                                 return isSelected();
                             }
                             break;
-                        case AccessibilityNodeInfo.ACTION_CLEAR_SELECTION:
+                        case AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS:
                             if (isSelected()) {
                                 setSelected(false);
                                 return !isSelected();
@@ -465,11 +480,11 @@ public class AccessibilityNodeProviderActivity extends Activity {
                     }
                     // Perform the action on a virtual view.
                     switch (action) {
-                        case AccessibilityNodeInfo.ACTION_SELECT:
+                        case AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS:
                             setVirtualViewSelected(child, true);
                             invalidate();
                             return true;
-                        case AccessibilityNodeInfo.ACTION_CLEAR_SELECTION:
+                        case AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS:
                             setVirtualViewSelected(child, false);
                             invalidate();
                             return true;
