@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Accessibility Node Provider Demo</string>
+    <string name="accessibility_node_provider_instructions">Enable TalkBack and Explore-by-touch from accessibility
+        settings. Then touch the colored squares.</string>
+</resources>
